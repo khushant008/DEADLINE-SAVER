@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deadline Saver</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
+    }
+    label, input, select {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+    }
+    button {
+      margin-top: 20px;
+      background: #4caf50;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .hidden { display: none; }
+    .service-section { margin-bottom: 20px; }
+    canvas { margin-top: 20px; max-width: 100%; border-radius: 10px; }
+    #previewImage { margin-top: 20px; max-width: 100%; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container" id="formContainer">
+    <h2>Deadline Save - Student Details</h2>
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="whatsapp" placeholder="WhatsApp Number" required>
+    <input type="text" id="division" placeholder="Division" required>
+
+    <div class="service-section">
+      <h3>Assignment (₹100)</h3>
+      <input type="file" id="assignmentFile" accept="application/pdf">
+    </div>
+
+    <div class="service-section">
+      <h3>Manual (₹100)</h3>
+      <input type="file" id="manualFile" accept="application/pdf">
+    </div>
+
+    <div class="service-section">
+      <h3>Project (₹45 per item)</h3>
+      <label><input type="checkbox" id="physicsCheck"> Physics</label>
+      <label><input type="checkbox" id="chemistryCheck"> Chemistry</label>
+      <label><input type="checkbox" id="otherCheck"> Other Subject</label>
+      <input type="text" id="projectNote" placeholder="Additional project details (optional)">
+    </div>
+
+    <button onclick="processOrder()">Proceed</button>
+  </div>
+
+  <div class="container hidden" id="summaryContainer">
+    <h2>Order Summary</h2>
+    <canvas id="summaryCanvas" width="600" height="800"></canvas>
+    <h3>Scan & Pay</h3>
+    <img src="your-qr-code.png" alt="QR Code" width="200">
+    <p>Total Amount: ₹<span id="totalAmountCanvas"></span></p>
+    <button onclick="downloadAndSend()">Download Summary & Open WhatsApp</button>
+    <h3>Preview Summary</h3>
+    <img id="previewImage" class="hidden" alt="Summary Preview" />
+  </div>
+
+  <div class="container hidden" id="thankYouContainer">
+    <h2>✅ Thank you! Your order is confirmed.</h2>
+  </div>
+
+  <script>
+    function processOrder() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const whatsapp = document.getElementById('whatsapp').value;
+      const division = document.getElementById('division').value;
+      const projectNote = document.getElementById('projectNote').value;
+
+      const assignmentFile = document.getElementById('assignmentFile').files[0];
+      const manualFile = document.getElementById('manualFile').files[0];
+
+      const isPhysics = document.getElementById('physicsCheck').checked;
+      const isChemistry = document.getElementById('chemistryCheck').checked;
+      const isOther = document.getElementById('otherCheck').checked;
+
+      let total = 0;
+      let services = [];
+      let fileLinks = [];
+
+      if (assignmentFile) {
+        services.push("Assignment (₹100)");
+        fileLinks.push(`Assignment File: ${assignmentFile.name}`);
+        total += 100;
+      }
+      if (manualFile) {
+        services.push("Manual (₹100)");
+        fileLinks.push(`Manual File: ${manualFile.name}`);
+        total += 100;
+      }
+
+      if (isPhysics) {
+        services.push("Physics Project (₹45)");
+        total += 45;
+      }
+      if (isChemistry) {
+        services.push("Chemistry Project (₹45)");
+        total += 45;
+      }
+      if (isOther) {
+        services.push("Other Subject Project (₹45)");
+        total += 45;
+      }
+
+      const canvas = document.getElementById("summaryCanvas");
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#1e1e1e";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#4caf50";
+      ctx.font = "24px Arial";
+      ctx.fillText("Deadline Save - Order Summary", 20, 40);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "18px Arial";
+      ctx.fillText(`Name: ${name}`, 20, 80);
+      ctx.fillText(`Email: ${email}`, 20, 110);
+      ctx.fillText(`WhatsApp: ${whatsapp}`, 20, 140);
+      ctx.fillText(`Division: ${division}`, 20, 170);
+
+      ctx.fillText("Services:", 20, 200);
+      services.forEach((service, i) => {
+        ctx.fillText(`- ${service}`, 40, 230 + (i * 30));
+      });
+
+      ctx.fillText("Uploaded Files:", 20, 240 + (services.length * 30));
+      fileLinks.forEach((file, i) => {
+        ctx.fillText(`- ${file}`, 40, 270 + (services.length * 30) + (i * 30));
+      });
+
+      if (projectNote) {
+        ctx.fillText(`Project Note: ${projectNote}`, 20, 280 + (services.length * 30) + (fileLinks.length * 30));
+      }
+
+      ctx.fillText(`Total: ₹${total}`, 20, 320 + (services.length * 30) + (fileLinks.length * 30));
+
+      document.getElementById('totalAmountCanvas').textContent = total;
+      document.getElementById('formContainer').classList.add('hidden');
+      document.getElementById('summaryContainer').classList.remove('hidden');
+    }
+
+    function downloadAndSend() {
+      const canvas = document.getElementById("summaryCanvas");
+      const image = canvas.toDataURL("image/png");
+
+      const imgElement = document.getElementById("previewImage");
+      imgElement.src = image;
+      imgElement.classList.remove("hidden");
+
+      const a = document.createElement("a");
+      a.href = image;
+      a.download = "order-summary.png";
+      a.click();
+
+      setTimeout(() => {
+        window.open(`https://wa.me/9130197397`, '_blank');
+        document.getElementById('summaryContainer').classList.add('hidden');
+        document.getElementById('thankYouContainer').classList.remove('hidden');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
